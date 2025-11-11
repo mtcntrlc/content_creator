@@ -1,0 +1,7 @@
+# Gerekli temel kütüphaneler
+python-dotenv         # .env dosyalarını okumak için (Madde 1)
+google-generativeai   # Gemini API
+opencv-python         # Video işleme
+imagehash             # Görüntü benzerliği
+reportlab             # PDF oluşturma
+streamlit             # (Gelecek Adım 2 - Arayüz için)

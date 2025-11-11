@@ -1,0 +1,24 @@
+# Güvenlik (API Anahtarı)
+.env
+.env.*
+
+# Bağımlılıklar (Sanal Ortam)
+.venv/
+venv/
+*.local
+
+# Üretilen Dosyalar (Çıktılar ve Girdiler)
+input/
+output/
+*.mp4
+*.srt
+*.pdf
+
+# Python Önbelleği
+__pycache__/
+*.pyc
+
+# İşletim Sistemi ve IDE Ayarları
+.DS_Store
+.idea/
+*.iml
