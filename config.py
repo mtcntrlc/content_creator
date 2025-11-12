@@ -11,7 +11,7 @@ API_ANAHTARI = os.environ.get("GOOGLE_API_KEY")
 # 3. AI Sağlayıcı Seçimi (Madde 4)
 # .env'de belirtilmemişse, güvenli mod olan "MOCK"u varsay
 AI_PROVIDER_TYPE = os.environ.get("AI_PROVIDER_TYPE", "MOCK")
-AI_MODEL_NAME = "gemini-1.5-pro" # (Gemini kullanılıyorsa)
+AI_MODEL_NAME = "gemini-pro-vision" # (Gemini kullanılıyorsa)
 
 # 4. İş Bazlı Girdi/Çıktı Klasörleri (Madde 2)
 INPUT_DIR = "input"

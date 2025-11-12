@@ -1,6 +1,6 @@
 # Güvenlik (API Anahtarı)
 .env
-.env.*
+.env
 
 # Bağımlılıklar (Sanal Ortam)
 .venv/

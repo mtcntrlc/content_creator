@@ -5,11 +5,21 @@ from engine.video_processor import extract_frames_with_timestamps
 from engine.transcript_parser import parse_srt_file
 from engine.content_merger import match_frames_to_subs, merge_similar_segments
 from PIL import Image
-from reportlab.pdfgen import canvas  # ... (ve diğer reportlab importları)
+
+# --- GEREKLİ REPORTLAB IMPORTLARI (EKSİKLER EKLENDİ) ---
+from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
+from reportlab.lib.utils import ImageReader
+from reportlab.platypus import Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+# --- FONT DÜZELTMESİ İÇİN YENİ IMPORTLAR ---
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
 
-# ... (PDF_Builder için gereken diğer tüm importlar)
+# --- IMPORT SONU ---
+
 
 class PDFBuilder(BaseBuilder):
 
@@ -27,18 +37,85 @@ class PDFBuilder(BaseBuilder):
 
     def _create_pdf_file(self, instruction_steps: list, output_path: str):
         print(f"[{self.job_name}] PDF dosyası oluşturuluyor: {output_path}")
-        # ... (Geçen seferki 'create_instructional_pdf' fonksiyonunun
-        # tüm reportlab kodunu buraya taşıyın) ...
-        # ... (c.save() vb.) ...
-        print(f"[{self.job_name}] PDF başarıyla oluşturuldu.")
+
+        try:
+            w, h = A4
+            c = canvas.Canvas(output_path, pagesize=A4)
+            styles = getSampleStyleSheet()
+
+            # --- FONT DÜZELTMESİ (TÜRKÇE KARAKTER İÇİN) ---
+            # reportlab ile gelen Vera fontunu (UTF-8 destekli) kaydediyoruz
+            pdfmetrics.registerFont(TTFont('Vera', 'Vera.ttf'))
+
+            style_n = styles['Normal']
+            style_n.fontName = 'Vera'  # Stile fontu atıyoruz
+            style_n.fontSize = 10
+            style_n.spaceAfter = 10
+
+            style_h = styles['Heading2']
+            style_h.fontName = 'Vera'  # Stile fontu atıyoruz
+            style_h.fontSize = 14
+            style_h.spaceAfter = 15
+            # --- FONT DÜZELTMESİ SONU ---
+
+            margin = 50
+            content_width = w - (2 * margin)
+
+            for i, step in enumerate(instruction_steps):
+                # 'Adım' metni artık 'Vera' fontu ile yazılacak
+                p_title = Paragraph(f"Adım {i + 1}", style_h)
+                p_title.wrapOn(c, content_width, margin)
+                p_title.drawOn(c, margin, h - margin - 30)
+
+                current_y = h - margin - 60
+
+                # 1. Görüntü
+                img_path = step['representative_png']
+                try:
+                    pil_img = Image.open(img_path)
+                    img_w, img_h = pil_img.size
+                    max_img_h = h / 3
+                    scale = min(content_width / img_w, max_img_h / img_h)
+                    new_w = img_w * scale
+                    new_h = img_h * scale
+
+                    c.drawImage(ImageReader(pil_img), margin, current_y - new_h, width=new_w, height=new_h,
+                                preserveAspectRatio=True, anchor='nw')
+                    current_y -= (new_h + 20)
+
+                except Exception as e:
+                    c.setFillColorRGB(1, 0, 0)  # Kırmızı renk
+                    c.drawString(margin, current_y - 20, f"[Görüntü yüklenemedi: {img_path}]")
+                    current_y -= 40
+
+                # 2. AI Metni (Düzeltilmiş mock metni 'Vera' fontu ile yazılacak)
+                ai_text = step['ai_generated_text'].replace('\n', '<br/>')
+                p_text = Paragraph(ai_text, style_n)
+
+                text_w, text_h = p_text.wrapOn(c, content_width, margin)
+
+                if current_y - text_h < margin:
+                    c.showPage()
+                    current_y = h - margin
+                    p_title.drawOn(c, margin, current_y - 30)
+                    current_y -= 60
+
+                p_text.drawOn(c, margin, current_y - text_h)
+
+                c.showPage()
+
+            c.save()
+            print(f"[{self.job_name}] PDF başarıyla oluşturuldu ve diske kaydedildi.")
+
+        except Exception as e:
+            print(f"KRİTİK HATA: PDF dosyası oluşturulurken hata: {e}")
+            raise e
 
     def build(self):
         # 1. Hammaddeleri al
         video_path = self.materials['video_path']
         srt_path = self.materials['srt_path']
 
-        # Bu motora özel PNG klasörü (Madde 2)
-        # output/ornek_proje_1/pdf/screenshots/
         png_temp_folder = os.path.join(self.builder_output_dir, "screenshots")
 
         # 2. PDF'e özel iş akışını (workflow) çalıştır
